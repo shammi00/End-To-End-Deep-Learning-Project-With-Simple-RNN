@@ -28,11 +28,12 @@ The project uses **TensorFlow/Keras** for deep learning and **Streamlit** to pro
 10. [Installation and Setup](#installation-and-setup)
 11. [Running the Application](#running-the-application)
 12. [Prediction Process](#prediction-process)
-13. [Model Evaluation](#model-evaluation)
-14. [Learning Outcomes](#learning-outcomes)
-15. [Future Improvements](#future-improvements)
-16. [License](#license)
-17. [Author](#author)
+13. [Application Screenshots](#application-screenshots)
+14. [Model Evaluation](#model-evaluation)
+15. [Learning Outcomes](#learning-outcomes)
+16. [Future Improvements](#future-improvements)
+17. [License](#license)
+18. [Author](#author)
 
 ---
 
@@ -262,6 +263,14 @@ End-To-End-Deep-Learning-Project-With-Simple-RNN/
 |-- main.py
 |   # Streamlit sentiment analysis application
 |
+|-- requirements.txt
+|   # Project dependencies
+|
+|-- screenshots/
+|   |-- README.md
+|   |-- positive_prediction.png
+|   +-- negative_prediction.png
+|
 |-- simple_rnn_imdb.h5
 |   # Saved trained Keras model
 |
@@ -311,15 +320,13 @@ source venv/bin/activate
 
 ### Step 3: Install Dependencies
 
-The Streamlit application uses TensorFlow, NumPy, and Streamlit.
-
-Install the required packages:
+Install the project dependencies using the provided `requirements.txt` file:
 
 ```bash
-pip install tensorflow numpy streamlit
+pip install -r requirements.txt
 ```
 
-**Note:** A `requirements.txt` file is not currently included in the repository. Package versions should be selected based on compatibility with the saved model and your Python environment.
+The requirements include TensorFlow 2.15.0, NumPy, and Streamlit. Use a Python version compatible with the pinned TensorFlow release.
 
 ### Step 4: Verify Model File
 
@@ -385,20 +392,23 @@ user_input = st.text_area("Movie Review")
 
 ### Step 2: Preprocess Text
 
-The existing application converts the review to lowercase, splits it into words, maps words to IMDB vocabulary indices, and pads the resulting sequence.
+The application converts the review to lowercase, splits it into words, maps words to IMDB vocabulary indices, maps unknown or out-of-vocabulary words to index 2, and pads the resulting sequence.
 
 ```python
 def preprocess_text(text):
     words = text.lower().split()
 
     encoded_review = [
-        word_index.get(word, 2) + 3
+        index + 3 if index is not None and index + 3 < 10000 else 2
         for word in words
+        for index in [word_index.get(word)]
     ]
 
     padded_review = sequence.pad_sequences(
         [encoded_review],
-        maxlen=500
+        maxlen=500,
+        padding='pre',
+        truncating='pre'
     )
 
     return padded_review
@@ -406,7 +416,7 @@ def preprocess_text(text):
 
 The maximum sequence length used during inference is 500.
 
-**Important:** This is the preprocessing implemented in `main.py`. Its consistency with the training-time preprocessing should be verified, particularly for punctuation and unknown words.
+**Note:** The model uses a vocabulary limit of 10,000 and an input length of 500. Consistency with training-time tokenization should still be verified, particularly for punctuation.
 
 ### Step 3: Generate Prediction
 
@@ -427,14 +437,46 @@ sentiment = (
 ### Step 5: Display Results
 
 ```python
-st.write(f"Sentiment: {sentiment}")
+score = float(prediction[0][0])
 
-st.write(
-    f"Prediction Score: {prediction[0][0]}"
-)
+if sentiment == "Positive":
+    st.success(f"Sentiment: {sentiment}")
+else:
+    st.error(f"Sentiment: {sentiment}")
+
+st.write(f"Prediction Score: {score:.4f}")
 ```
 
 The numerical prediction score is the model output used for classification. It should not automatically be interpreted as a calibrated confidence value.
+
+
+---
+
+## 📸 Application Screenshots
+
+The Streamlit web application provides an interactive interface for analyzing movie review sentiment using a trained Simple RNN model.
+
+### Positive Sentiment Prediction
+
+The model classifies a review describing breathtaking visuals as positive.
+
+![Positive Sentiment Prediction](screenshots/positive_prediction.png)
+
+### Negative Sentiment Prediction
+
+The model classifies a review describing poor visuals and dialogues as negative.
+
+![Negative Sentiment Prediction](screenshots/negative_prediction.png)
+
+### Application Features
+
+- Interactive movie review input using Streamlit
+- Text preprocessing and sequence padding
+- Sentiment classification using a trained Simple RNN
+- Positive and negative sentiment predictions
+- Display of the model's prediction score
+- Input validation for empty reviews
+
 
 ## Model Evaluation
 
@@ -485,9 +527,8 @@ Potential improvements include:
 - Providing clearer prediction score explanations
 - Adding input validation and error handling
 - Adding automated tests
-- Creating a version-pinned `requirements.txt`
 - Deploying the Streamlit application to a hosting platform
-- Adding screenshots and a live application demo
+- Publishing a live application demo
 
 ## License
 
