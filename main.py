@@ -18,11 +18,26 @@ def decode_review(encoded_review):
     return ' '.join([reverse_word_index.get(i - 3, '?') for i in encoded_review])
 
 # Function to preprocess user input
+
+# Function to preprocess user input
 def preprocess_text(text):
     words = text.lower().split()
-    encoded_review = [word_index.get(word, 2) + 3 for word in words]
-    padded_review = sequence.pad_sequences([encoded_review], maxlen=500)
+
+    encoded_review = [
+        index + 3 if index is not None and index + 3 < 10000 else 2
+        for word in words
+        for index in [word_index.get(word)]
+    ]
+
+    padded_review = sequence.pad_sequences(
+        [encoded_review],
+        maxlen=500,
+        padding='pre',
+        truncating='pre'
+    )
+
     return padded_review
+
 
 
 import streamlit as st
@@ -34,17 +49,28 @@ st.write('Enter a movie review to classify it as positive or negative.')
 # User input
 user_input = st.text_area('Movie Review')
 
+
 if st.button('Classify'):
 
-    preprocessed_input=preprocess_text(user_input)
+    if user_input.strip():
 
-    ## MAke prediction
-    prediction=model.predict(preprocessed_input)
-    sentiment='Positive' if prediction[0][0] > 0.5 else 'Negative'
+        preprocessed_input = preprocess_text(user_input)
 
-    # Display the result
-    st.write(f'Sentiment: {sentiment}')
-    st.write(f'Prediction Score: {prediction[0][0]}')
-else:
-    st.write('Please enter a movie review.')
+        # Make prediction
+        prediction = model.predict(preprocessed_input)
+        score = float(prediction[0][0])
+
+        sentiment = 'Positive' if score > 0.5 else 'Negative'
+
+        # Display the result
+        if sentiment == 'Positive':
+            st.success(f'Sentiment: {sentiment}')
+        else:
+            st.error(f'Sentiment: {sentiment}')
+
+        st.write(f'Prediction Score: {score:.4f}')
+
+    else:
+        st.warning('Please enter a movie review.')
+
 
